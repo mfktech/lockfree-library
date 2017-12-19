@@ -18,7 +18,7 @@
 
     <modules>
          <module>lockfree-library</module>
-         <module>jmh-benchmarking</module>         
+         <module>jmh-benchmark</module>         
     </modules>
  
     <dependencies>
