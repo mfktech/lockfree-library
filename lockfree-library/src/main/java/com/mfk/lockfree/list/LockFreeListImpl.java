@@ -6,17 +6,17 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-public class LockFreeConcurrentListImpl<T> implements LockFreeConcurrentList<T> {
+public class LockFreeListImpl<T> implements LockFreeList<T> {
     private final int fragmentSize;
     private final LongAdder length = new LongAdder();
     private Fragment<T> head;
     private Fragment<T> tail;
 
-    public LockFreeConcurrentListImpl() {
+    public LockFreeListImpl() {
         this(1000);
     }
 
-    LockFreeConcurrentListImpl(final int fragmentSize) {
+    public LockFreeListImpl(final int fragmentSize) {
         final Fragment<T> fragment = new Fragment<>(fragmentSize);
         this.fragmentSize = fragmentSize;
         this.head = fragment;

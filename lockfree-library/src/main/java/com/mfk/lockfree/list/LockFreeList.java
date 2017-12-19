@@ -9,7 +9,7 @@ import java.util.stream.Stream;
  *
  * @author fkhan
  */
-public interface LockFreeConcurrentList<T> {
+public interface LockFreeList<T> {
     /**
      * Appends the given object to the list. The runtime analysis is O(1).
      *

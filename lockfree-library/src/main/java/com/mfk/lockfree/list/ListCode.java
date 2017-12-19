@@ -1,7 +1,7 @@
 package com.mfk.lockfree.list;
 
 /**
- * Status codes used in {@link LockFreeConcurrentList} APIs
+ * Status codes used in {@link LockFreeList} APIs
  *
  * @author farhankhan.
  */
