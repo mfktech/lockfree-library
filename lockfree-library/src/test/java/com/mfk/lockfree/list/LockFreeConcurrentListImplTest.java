@@ -180,11 +180,7 @@ public class LockFreeConcurrentListImplTest {
         completableFuture.get();
         long count = 0;
 
-        for (String s : list) {
-            count++;
-        }
-
-        System.out.println("Count: " + count);
+        System.out.println("Count: " + list.stream().count());
     }
 
     private CompletableFuture<Void> createFuture(final String prefix, final LockFreeConcurrentList<String> lockFreeConcurrentList) {
