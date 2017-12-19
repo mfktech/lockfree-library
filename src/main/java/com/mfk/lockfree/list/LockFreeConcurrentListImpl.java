@@ -1,67 +1,65 @@
 package com.mfk.lockfree.list;
 
-import java.util.Iterator;
-import java.util.Objects;
-import java.util.Spliterator;
-import java.util.Spliterators;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.*;
+import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 class LockFreeConcurrentListImpl<T> implements LockFreeConcurrentList<T> {
-    private final AtomicReference<ListNode<T>> headRef;
-    private final AtomicReference<ListNode<T>> tailRef;
-//    private final LongAdder longAdder;
+    private final int fragmentSize;
+    private final LongAdder length = new LongAdder();
+    private Fragment<T> head;
+    private Fragment<T> tail;
 
     LockFreeConcurrentListImpl() {
-        ListNode<T> nullObject = new ListNode<>(null);
-        this.headRef = new AtomicReference<>(nullObject);
-        this.tailRef = new AtomicReference<>(nullObject);
-//        this.longAdder = new LongAdder();
+        this(1000);
+    }
+
+    LockFreeConcurrentListImpl(final int fragmentSize) {
+        final Fragment<T> fragment = new Fragment<>(fragmentSize);
+        this.fragmentSize = fragmentSize;
+        this.head = fragment;
+        this.tail = fragment;
     }
 
     @Override
-    public ListCode append(T item) {
-        if (item == null) return ListCode.NULL;
+    public ListCode append(T t) {
+        if (t == null) return ListCode.NULL;
 
-        ListNode<T> newNode = new ListNode<>(item);
-        ListNode<T> curr = tailRef.get();
-
-        while (curr.setNextIfNull(newNode) != newNode) {
-            ListNode<T> nextNode = curr.getNext();
-            if (nextNode != null) {
-                curr = nextNode;
-            }
+        while (!tail.add(t)) {
+            this.tail = tail.createOrGetNextFragment();
         }
 
-        tailRef.set(newNode);
-//        longAdder.increment();
+        length.increment();
         return ListCode.SUCCESS;
     }
 
     @Override
-    public ListCode delete(T item) {
-        if (item == null) return ListCode.NULL;
-        if (length() == 0) return ListCode.EMPTY_LIST;
+    public ListCode delete(T element) {
+        return delete(element, null);
+    }
 
-        ListNode<T> prev = headRef.get();
-        ListNode<T> curr = headRef.get().getNext();
+    @Override
+    public ListCode delete(final T t, final Consumer<T> consumer) {
+        Optional<Fragment<T>> optFragment = Optional.of(head);
+        Optional<Fragment<T>> optPrev = Optional.empty();
 
-        while (curr != null && curr.isActive()) {
-            if (Objects.equals(curr.getValue(), item)) {
-                curr.setStatusAsDeleted();
-                ListNode<T> next = curr.getNext();
+        while (optFragment.isPresent()) {
+            Fragment<T> thisFragment = optFragment.get();
+            OptionalInt optIndex = thisFragment.find(t);
 
-                if (next != null) {
-                    prev.setNext(next);
-                } else {
-                    // FIXME: How do we update prev and tail pointer atomically
-                }
-
+            if (optIndex.isPresent()) {
+                Optional<T> optElem = thisFragment.get(optIndex.getAsInt());
+                thisFragment.delete(optIndex.getAsInt());
+                deleteFragment(optPrev, optFragment);
+                length.decrement();
+                useConsumer(consumer, optElem);
                 return ListCode.SUCCESS;
             }
 
-            curr = curr.getNext();
+            optPrev = optFragment;
+            optFragment = thisFragment.getNextFragment();
         }
 
         return ListCode.NOT_FOUND;
@@ -69,31 +67,89 @@ class LockFreeConcurrentListImpl<T> implements LockFreeConcurrentList<T> {
 
     @Override
     public long length() {
-        return 0L;
+        return length.longValue();
     }
 
     @Override
     public Stream<T> stream() {
         Iterator<T> iterator = new Iterator<T>() {
-            private ListNode<T> currNode = headRef.get();
+            private Fragment<T> fragment = head;
+            private int index;
 
             @Override
             public boolean hasNext() {
-                return currNode.getNext() != null;
+                while (!fragment.get(index).isPresent()) {
+                    if (index >= fragmentSize) {
+                        Optional<Fragment<T>> optNextFragment = fragment.getNextFragment();
+                        if (optNextFragment.isPresent()) {
+                            fragment = optNextFragment.get();
+                        } else {
+                            return false;
+                        }
+
+                        index = 0;
+                    } else {
+                        index++;
+                    }
+                }
+
+                return true;
             }
 
             @Override
             public T next() {
-                if (currNode.getNext() != null)
-                    currNode = currNode.getNext();
-                else
-                    throw new RuntimeException("Next element does not exist.");
+                Optional<T> optElement = fragment.get(index++);
 
-                return currNode.getValue();
+                if (optElement.isPresent()) {
+                    return optElement.get();
+                } else {
+                    throw new NoSuchElementException("Element not found.");
+                }
             }
         };
 
         return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iterator,
                 Spliterator.ORDERED | Spliterator.NONNULL), false);
+    }
+
+    Fragment<T> getHead() {
+        return head;
+    }
+
+    private void deleteFragment(Optional<Fragment<T>> optPrev, Optional<Fragment<T>> optFragmentToDelete) {
+        if (optFragmentToDelete.isPresent()) {
+            Fragment<T> thisFragment = optFragmentToDelete.get();
+            Optional<Fragment<T>> optNextFragment = thisFragment.getNextFragment();
+
+            if (thisFragment.isAllElementsNull() && !thisFragment.isAppendable()) {
+                // if all elements in the given fragment are null and if new elements cannot be appended
+                if (optNextFragment.isPresent()) {
+                    // this means that this fragment is not tail
+                    rewireFragments(optPrev, optNextFragment);
+                } else {
+                    // we are dealing with tail, just create or get next fragment
+                    Fragment<T> nextFragment = thisFragment.createOrGetNextFragment();
+                    rewireFragments(optPrev, Optional.of(nextFragment));
+                }
+            }
+        }
+    }
+
+    private void rewireFragments(Optional<Fragment<T>> optPrev, Optional<Fragment<T>> optNextFragment) {
+        Fragment<T> nextFragment = optNextFragment.get();
+        if (optPrev.isPresent()) {
+            optPrev.get().setNextFragment(nextFragment);
+        } else {
+            head = nextFragment;
+        }
+    }
+
+    private void useConsumer(Consumer<T> consumer, Optional<T> optElem) {
+        if (consumer != null) {
+            try {
+                if (optElem.isPresent()) consumer.accept(optElem.get());
+            } catch (Throwable ignore) {
+            }
+        }
     }
 }
