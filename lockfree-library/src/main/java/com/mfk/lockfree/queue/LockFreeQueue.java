@@ -8,6 +8,14 @@ import java.util.Optional;
  * @param <T> the type of contained elements.
  */
 public interface LockFreeQueue<T> {
+    static <E> LockFreeQueue<E> newUnboundedQueue() {
+        return new LockFreeUnboundedQueue<>();
+    }
+
+    static <E> LockFreeQueue<E> newBoundedQueue(final long size) {
+        return new LockFreeBoundedQueue<>(size);
+    }
+
     /**
      * @param element
      * @return
@@ -15,8 +23,6 @@ public interface LockFreeQueue<T> {
     boolean add(T element);
 
     Optional<T> poll();
-
-    Optional<T> peek();
 
     long size();
 }

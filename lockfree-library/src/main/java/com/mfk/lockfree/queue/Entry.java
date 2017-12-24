@@ -4,16 +4,18 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 class Entry<T> {
-    private final AtomicReference<T> elementRef;
-    private final AtomicReference<Entry> nextRef;
+    private final T value;
+    private final AtomicReference<Entry<T>> nextRef;
+    private final AtomicReference<Status> statusRef;
 
-    Entry(final T element) {
-        this.elementRef = new AtomicReference<>(element);
+    Entry(final T value) {
+        this.value = value;
         this.nextRef = new AtomicReference<>();
+        statusRef = new AtomicReference<>(Status.NEW);
     }
 
-    Optional<T> getElement() {
-        return Optional.ofNullable(elementRef.get());
+    Optional<T> getValue() {
+        return Optional.ofNullable(value);
     }
 
     Optional<Entry<T>> getNext() {
@@ -23,5 +25,13 @@ class Entry<T> {
     Entry<T> setNextIfNull(Entry<T> nextEntry) {
         if (getNext().isPresent()) return nextRef.get();
         return nextRef.compareAndSet(null, nextEntry) ? nextEntry : nextRef.get();
+    }
+
+    boolean consume() {
+        return statusRef.compareAndSet(Status.NEW, Status.CONSUMED);
+    }
+
+    enum Status {
+        NEW, CONSUMED
     }
 }
