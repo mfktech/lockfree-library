@@ -37,7 +37,7 @@ public interface LockFreeList<T> {
      * @param element the item to add
      * @return the status of this operation, whether failed or succeeded.
      */
-    ListCode append(final T element);
+    boolean append(final T element);
 
     /**
      * Removes the object from the list.
@@ -45,9 +45,9 @@ public interface LockFreeList<T> {
      * The runtime analysis is O(n).
      *
      * @param element the item to be deleted
-     * @return the failure or success code
+     * @return true if failed if removed successfully, false otherwise.
      */
-    ListCode remove(final T element);
+    boolean remove(final T element);
 
     /**
      * Gets the size of the list.
@@ -60,7 +60,7 @@ public interface LockFreeList<T> {
     long size();
 
     /**
-     * Gets the stream of objects in the list. The parallel stream is
+     * Gets the stream of objects in the list.
      *
      * @return the stream of objects in the list.
      */

@@ -20,18 +20,18 @@ public class LockFreeListImpl<T> implements LockFreeList<T> {
     }
 
     @Override
-    public ListCode append(T t) {
-        if (t == null) return ListCode.NULL;
+    public boolean append(T t) {
+        if (t == null) return false;
         while (!tail.add(t)) {
             this.tail = tail.createOrGetNextFragment();
         }
 
         total.increment();
-        return ListCode.SUCCESS;
+        return true;
     }
 
     @Override
-    public ListCode remove(T element) {
+    public boolean remove(T element) {
         Optional<Fragment<T>> optFragment = Optional.of(head);
         Optional<Fragment<T>> optPrev = Optional.empty();
 
@@ -43,14 +43,14 @@ public class LockFreeListImpl<T> implements LockFreeList<T> {
                 thisFragment.remove(optIndex.getAsInt());
                 removeFragment(optPrev.orElse(null), thisFragment);
                 removed.increment();
-                return ListCode.SUCCESS;
+                return true;
             }
 
             optPrev = optFragment;
             optFragment = thisFragment.getNextFragment();
         }
 
-        return ListCode.NOT_FOUND;
+        return false;
 
     }
 
