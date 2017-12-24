@@ -10,19 +10,19 @@ import java.util.stream.IntStream;
  * Created by farhankhan on 12/16/17.
  */
 class Fragment<T> {
-    private final int size;
+    private final int maxSize;
     private final Object[] elements;
-    private final AtomicInteger atomicIndex = new AtomicInteger(0);
+    private final AtomicInteger last = new AtomicInteger(0);
     private AtomicReference<Fragment<T>> nextRef = new AtomicReference<>();
 
-    Fragment(final int size) {
-        this.size = size;
-        this.elements = new Object[size];
+    Fragment(final int maxSize) {
+        this.maxSize = maxSize;
+        this.elements = new Object[maxSize];
     }
 
     Fragment<T> createOrGetNextFragment() {
         if (nextRef.get() == null) {
-            Fragment<T> newContainer = new Fragment<>(size);
+            Fragment<T> newContainer = new Fragment<>(maxSize);
             nextRef.compareAndSet(null, newContainer);
         }
 
@@ -39,48 +39,50 @@ class Fragment<T> {
 
     boolean add(final T element) {
         try {
-            elements[atomicIndex.getAndIncrement()] = element;
+            elements[last.getAndIncrement()] = element;
             return true;
         } catch (IndexOutOfBoundsException ignore) {
             return false;
         }
     }
 
-    Optional<T> get(final int index) {
-        return Optional.ofNullable(index >= size ? null : (T) elements[index]);
-    }
-
     OptionalInt find(final T elementToFind) {
-        return IntStream.range(0, size)
+        return IntStream.range(0, maxSize)
                 .filter(i -> Objects.equals(elements[i], elementToFind))
                 .findFirst();
     }
 
-    void delete(final int index) {
-        if (index < size) {
-            T t = (T) elements[index];
+    void remove(final int index) {
+        if (index < maxSize) {
             elements[index] = null;
         }
     }
 
-    boolean isAllElementsNull() {
-        return !Arrays.stream(elements)
-                .filter(Objects::nonNull)
-                .findFirst()
-                .isPresent();
+    boolean isEmpty() {
+        return Arrays.stream(elements).noneMatch(Objects::nonNull);
     }
 
-    boolean isAppendable() {
-        return atomicIndex.get() < size;
+    boolean isWritable() {
+        return last.get() < maxSize;
     }
 
     int getCurrentIndex() {
-        return atomicIndex.get();
+        return last.get();
     }
 
-    List<T> getNonNullElements() {
+    @SuppressWarnings("unchecked")
+    Optional<T> get(final int index) {
+        return Optional.ofNullable(index >= maxSize ? null : (T) elements[index]);
+    }
+
+    @SuppressWarnings("unchecked")
+    List<T> getAll() {
         return Arrays.stream(elements).filter(Objects::nonNull)
                 .map(t -> (T) t)
                 .collect(Collectors.toList());
+    }
+
+    int getMaxSize() {
+        return maxSize;
     }
 }
