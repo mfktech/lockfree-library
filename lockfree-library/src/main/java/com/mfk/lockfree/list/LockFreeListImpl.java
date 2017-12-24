@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-public class LockFreeListImpl<T> implements LockFreeList<T> {
+class LockFreeListImpl<T> implements LockFreeList<T> {
     private final int maxFragmentSize;
     private final LongAdder total = new LongAdder();
     private final LongAdder removed = new LongAdder();
