@@ -13,10 +13,6 @@ public interface LockFreeQueue<T> {
         return new LockFreeUnboundedQueue<>();
     }
 
-    static <E> LockFreeQueue<E> newBoundedQueue(final long size) {
-        return new LockFreeBoundedQueue<>(size);
-    }
-
     /**
      * @param element
      * @return
