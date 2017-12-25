@@ -27,11 +27,11 @@ class Entry<T> {
         return nextRef.compareAndSet(null, nextEntry) ? nextEntry : nextRef.get();
     }
 
-    boolean consume() {
+    boolean setAsConsumed() {
         return statusRef.compareAndSet(Status.NEW, Status.CONSUMED);
     }
 
     enum Status {
-        NEW, CONSUMED
+        NEW, CONSUMED;
     }
 }

@@ -11,7 +11,7 @@
 
     <parent>
         <groupId>com.mfk.lockfree</groupId>
-        <artifactId>lockfree-parent</artifactId>
+        <artifactId>lockfree-collections</artifactId>
         <version>1.0-SNAPSHOT</version>
     </parent>
 

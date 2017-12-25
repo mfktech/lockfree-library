@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.mfk.lockfree</groupId>
-    <artifactId>lockfree-parent</artifactId>
+    <artifactId>lockfree-collections</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 

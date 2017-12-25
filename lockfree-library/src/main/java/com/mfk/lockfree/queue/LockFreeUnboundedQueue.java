@@ -11,13 +11,14 @@ class LockFreeUnboundedQueue<T> implements LockFreeQueue<T> {
     LockFreeUnboundedQueue() {
         // initially head and tail points to empty/null entry
         this.head = new Entry<>(null);
-        this.head.consume();
+        this.head.setAsConsumed();
         this.tail = this.head;
     }
 
     @Override
     public boolean add(T element) {
         if (element == null) return false;
+
         Entry<T> newEntry = new Entry<>(element);
         Entry<T> curr = this.tail;
         Entry<T> next;
@@ -38,7 +39,7 @@ class LockFreeUnboundedQueue<T> implements LockFreeQueue<T> {
     public Optional<T> poll() {
         Optional<Entry<T>> curr = Optional.of(head);
 
-        while (curr.isPresent() && !curr.get().consume()) {
+        while (curr.isPresent() && !curr.get().setAsConsumed()) {
             curr = curr.get().getNext();
         }
 

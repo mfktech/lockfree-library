@@ -1,5 +1,6 @@
 package com.mfk.lockfree.queue;
 
+import java.io.IOException;
 import java.util.Optional;
 
 class LockFreeBoundedQueue<T> implements LockFreeQueue<T> {
