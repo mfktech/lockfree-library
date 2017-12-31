@@ -21,20 +21,20 @@ import static java.util.stream.Collectors.toSet;
 import static java.util.stream.Stream.concat;
 import static junit.framework.TestCase.assertEquals;
 
-public class LockFreeUnboundedQueueTest {
+public class LockFreeLinkedArrayQueueTest {
     private static final int MB = 1024 * 1024;
     private static final int KB = 1024;
 
     @Test
     public void testAdd() {
-        LockFreeUnboundedQueue<DataStub> queue = new LockFreeUnboundedQueue<>();
+        LockFreeLinkedArrayQueue<DataStub> queue = new LockFreeLinkedArrayQueue<>(1000);
         getDataObjStream(MB).forEach(queue::add);
         assertEquals(MB, queue.size());
     }
 
     @Test
     public void testPoll() {
-        LockFreeUnboundedQueue<DataStub> queue = new LockFreeUnboundedQueue<>();
+        LockFreeLinkedArrayQueue<DataStub> queue = new LockFreeLinkedArrayQueue<>(1000);
 
         getDataObjStream(MB).forEach(queue::add);
         assertEquals(MB, queue.size());
@@ -55,7 +55,7 @@ public class LockFreeUnboundedQueueTest {
         final int rThreads = 2;
 
         ExecutorService es = Executors.newFixedThreadPool(4);
-        LockFreeUnboundedQueue<DataStub> queue = new LockFreeUnboundedQueue<>();
+        LockFreeLinkedArrayQueue<DataStub> queue = new LockFreeLinkedArrayQueue<>(1000);
 
         Runnable writerSup = createWriter(queue, KB);
         Supplier<List<DataStub>> readerSup = createReaderWithList(queue, KB * wThreads / rThreads);
@@ -81,7 +81,7 @@ public class LockFreeUnboundedQueueTest {
         final int rThreads = 2;
 
         ExecutorService es = Executors.newFixedThreadPool(4);
-        LockFreeUnboundedQueue<DataStub> queue = new LockFreeUnboundedQueue<>();
+        LockFreeLinkedArrayQueue<DataStub> queue = new LockFreeLinkedArrayQueue<>(1000);
 
         Runnable writerSup = createWriter(queue, MB);
         Supplier<Long> readerSup = createReader(queue, MB * wThreads / rThreads);

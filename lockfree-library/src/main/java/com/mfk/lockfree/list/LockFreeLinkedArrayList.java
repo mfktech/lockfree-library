@@ -5,14 +5,14 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-class LockFreeListImpl<T> implements LockFreeList<T> {
+class LockFreeLinkedArrayList<T> implements LockFreeList<T> {
     private final int maxFragmentSize;
     private final LongAdder total = new LongAdder();
     private final LongAdder removed = new LongAdder();
     private Fragment<T> head;
     private Fragment<T> tail;
 
-    LockFreeListImpl(final int maxFragmentSize) {
+    LockFreeLinkedArrayList(final int maxFragmentSize) {
         final Fragment<T> fragment = new Fragment<>(maxFragmentSize);
         this.maxFragmentSize = maxFragmentSize;
         this.head = fragment;
@@ -42,7 +42,6 @@ class LockFreeListImpl<T> implements LockFreeList<T> {
             if (optIndex.isPresent()) {
                 thisFragment.remove(optIndex.getAsInt());
                 removeFragment(optPrev.orElse(null), thisFragment);
-                removed.increment();
                 return true;
             }
 
@@ -52,6 +51,32 @@ class LockFreeListImpl<T> implements LockFreeList<T> {
 
         return false;
 
+    }
+
+    @Override
+    public Optional<T> removeFirst() {
+        Optional<Fragment<T>> optFragment = Optional.of(head);
+        Optional<Fragment<T>> optPrev = Optional.empty();
+
+        while (optFragment.isPresent()) {
+            Fragment<T> thisFragment = optFragment.get();
+            Optional<T> elem = thisFragment.removeFirst();
+
+            if (elem.isPresent()) {
+                removeFragment(optPrev.orElse(null), thisFragment);
+                return elem;
+            }
+
+            optPrev = optFragment;
+            optFragment = thisFragment.getNextFragment();
+        }
+
+        return Optional.empty();
+//        Optional<T> optElem = head.removeFirst();
+//        if (optElem.isPresent()) {
+//            removeFragment(null, head);
+//        }
+//        return optElem;
     }
 
     @Override
@@ -106,19 +131,18 @@ class LockFreeListImpl<T> implements LockFreeList<T> {
     }
 
     private void removeFragment(Fragment<T> prev, Fragment<T> thisFragment) {
-        if (thisFragment != null) {
-            Optional<Fragment<T>> optNextFragment = thisFragment.getNextFragment();
+        removed.increment();
+        Optional<Fragment<T>> optNextFragment = thisFragment.getNextFragment();
 
-            if (thisFragment.isEmpty() && !thisFragment.isWritable()) {
-                // if all elements in the given fragment are null and if new elements cannot be appended
-                if (optNextFragment.isPresent()) {
-                    // this means that this fragment is not tail
-                    rewireFragments(prev, optNextFragment.get());
-                } else {
-                    // we are dealing with tail, just create or get next fragment
-                    Fragment<T> nextFragment = thisFragment.createOrGetNextFragment();
-                    rewireFragments(prev, nextFragment);
-                }
+        if (thisFragment.isEmpty() && !thisFragment.isWritable()) {
+            // if all elements in the given fragment are null and if new elements cannot be appended
+            if (optNextFragment.isPresent()) {
+                // this means that this fragment is not tail
+                rewireFragments(prev, optNextFragment.get());
+            } else {
+                // we are dealing with tail, just create or get next fragment
+                Fragment<T> nextFragment = thisFragment.createOrGetNextFragment();
+                rewireFragments(prev, nextFragment);
             }
         }
     }

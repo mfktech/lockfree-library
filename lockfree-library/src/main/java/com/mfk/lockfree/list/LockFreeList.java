@@ -1,5 +1,6 @@
 package com.mfk.lockfree.list;
 
+import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
@@ -28,7 +29,7 @@ public interface LockFreeList<T> {
      * @return newly created list
      */
     static <E> LockFreeList<E> newList(final int fragmentSize) {
-        return new LockFreeListImpl<>(fragmentSize);
+        return new LockFreeLinkedArrayList<>(fragmentSize);
     }
 
     /**
@@ -40,9 +41,7 @@ public interface LockFreeList<T> {
     boolean append(final T element);
 
     /**
-     * Removes the object from the list.
-     * <p/>
-     * The runtime analysis is O(n).
+     * Removes the object from the list in O(n).
      *
      * @param element the item to be deleted
      * @return true if failed if removed successfully, false otherwise.
@@ -50,10 +49,14 @@ public interface LockFreeList<T> {
     boolean remove(final T element);
 
     /**
-     * Gets the size of the list.
-     * <p/>
-     * The runtime analysis is O(1), the total number of items are maintained on every add/remove
-     * operation.
+     * Gets and removes the first element from the list.
+     *
+     * @return gets and removes the first element from the list.
+     */
+    Optional<T> removeFirst();
+
+    /**
+     * Gets the size of the list in O(1); the total number of items is maintained on every add/remove operation.
      *
      * @return the total size of list.
      */

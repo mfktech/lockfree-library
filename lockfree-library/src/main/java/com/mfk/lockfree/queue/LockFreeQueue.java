@@ -1,6 +1,5 @@
 package com.mfk.lockfree.queue;
 
-import java.io.Closeable;
 import java.util.Optional;
 
 /**
@@ -10,7 +9,7 @@ import java.util.Optional;
  */
 public interface LockFreeQueue<T> {
     static <E> LockFreeQueue<E> newUnboundedQueue() {
-        return new LockFreeUnboundedQueue<>();
+        return new LockFreeLinkedArrayQueue<>(1000);
     }
 
     /**

@@ -6,13 +6,11 @@ import org.openjdk.jmh.annotations.*;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 import static com.mfk.lockfree.util.Utils.intr;
 import static java.util.concurrent.CompletableFuture.runAsync;
@@ -29,50 +27,41 @@ import static java.util.stream.Stream.concat;
 public class LockFreeQueueBenchmark {
     @Benchmark
     public long measureLockFreeQueue() throws Exception {
-        final int MB = 1024 * 1024;
-
-        final int wThreads = 3;
-        final int rThreads = 3;
-
-        ExecutorService es = Executors.newFixedThreadPool(6);
         LockFreeQueue<DataStub> queue = LockFreeQueue.newUnboundedQueue();
-
-        Runnable w = () -> intr(MB).mapToObj(DataStub::new).forEach(queue::add);
-        Supplier<Long> r = createReader(queue, MB * wThreads / rThreads);
-
-        List<CompletableFuture<?>> writers = intr(wThreads).mapToObj(i -> runAsync(w, es)).collect(toList());
-        List<CompletableFuture<Long>> readers = intr(rThreads).mapToObj(i -> supplyAsync(r, es)).collect(toList());
-
-        CompletableFuture.allOf(concat(writers.stream(), readers.stream()).toArray(CompletableFuture[]::new)).get();
-        long total = readers.stream().map(Utils::get).mapToLong(d -> d).sum();
-        System.out.println("Total: " + total);
-        return total;
+        return performOp(queue::add, () -> queue.poll().orElse(null));
     }
 
-    private Supplier<Long> createReader(LockFreeQueue<DataStub> queue, int times) {
-        return () -> Stream.iterate(0, i -> i < times, i -> i + 1)
-                .map(i -> queue.poll()).flatMap(Optional::stream)
-                .count();
+    @Benchmark
+    public long measureJDKQueue() throws Exception {
+        ConcurrentLinkedQueue<DataStub> queue = new ConcurrentLinkedQueue<>();
+        return performOp(queue::add, queue::poll);
     }
 
-    private static class DataStub {
+    private long performOp(Consumer<DataStub> consumer, Supplier<DataStub> supplier) throws Exception {
+        final int wThreads = 2;
+        final int rThreads = 2;
+        final int writeCount = 1024 * 1024;
+        final int pollCount = writeCount * wThreads / rThreads;
+
+        Runnable writer = () -> intr(writeCount).mapToObj(DataStub::new).forEach(consumer);
+        Supplier<?> reader = () -> intr(pollCount).mapToObj(i -> supplier).count();
+
+        List<CompletableFuture<?>> wFut = intr(wThreads).mapToObj(i -> runAsync(writer)).collect(toList());
+        List<CompletableFuture<?>> rFut = intr(rThreads).mapToObj(i -> supplyAsync(reader)).collect(toList());
+        CompletableFuture.allOf(concat(wFut.stream(), rFut.stream()).toArray(CompletableFuture[]::new)).get();
+
+        return rFut.stream()
+                .map(Utils::get)
+                .filter(Objects::nonNull)
+                .mapToLong(o -> Long.parseLong(o.toString()))
+                .sum();
+    }
+
+    static class DataStub {
         private final int data;
 
         private DataStub(int data) {
             this.data = data;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            DataStub dataStub = (DataStub) o;
-            return this.data == dataStub.data;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(data);
         }
     }
 }

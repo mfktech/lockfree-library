@@ -11,13 +11,13 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.toList;
 import static junit.framework.TestCase.*;
 
-public class LockFreeListImplTest {
+public class LockFreeLinkedArrayListTest {
     /**
      * Tests when only one element needs to be deleted.
      */
     @Test
     public void testRemove1() {
-        LockFreeList<Integer> list = new LockFreeListImpl<>(100);
+        LockFreeList<Integer> list = new LockFreeLinkedArrayList<>(100);
         IntStream.range(0, 10).forEach(e -> list.append(e));
         assertEquals(10, list.size());
         list.remove(2);
@@ -30,7 +30,7 @@ public class LockFreeListImplTest {
      */
     @Test
     public void testRemove2() {
-        LockFreeList<Integer> list = new LockFreeListImpl<>(100);
+        LockFreeList<Integer> list = new LockFreeLinkedArrayList<>(100);
         IntStream.range(0, 250).forEach(e -> list.append(e));
         assertEquals(250, list.size());
         IntStream.range(80, 210).forEach(e -> list.remove(e));
@@ -40,7 +40,7 @@ public class LockFreeListImplTest {
                 .collect(toList());
         assertEquals(verifyList, list.stream().collect(toList()));
 
-        Fragment<Integer> head = ((LockFreeListImpl) list).getHead();
+        Fragment<Integer> head = ((LockFreeLinkedArrayList) list).getHead();
         assertEquals(101, head.getCurrentIndex());
         assertEquals(IntStream.range(0, 80).boxed().collect(toList()), head.getAll());
         assertTrue(head.getNextFragment().isPresent());
@@ -56,7 +56,7 @@ public class LockFreeListImplTest {
      */
     @Test
     public void testRemove3() {
-        LockFreeList<Integer> list = new LockFreeListImpl<>(100);
+        LockFreeList<Integer> list = new LockFreeLinkedArrayList<>(100);
         IntStream.range(0, 300).forEach(e -> list.append(e));
         assertEquals(300, list.size());
         IntStream.range(200, 300).forEach(e -> list.remove(e));
@@ -64,7 +64,7 @@ public class LockFreeListImplTest {
         List<Integer> verifyList = IntStream.range(0, 200).boxed().collect(toList());
         assertEquals(verifyList, list.stream().collect(toList()));
 
-        Fragment<Integer> head = ((LockFreeListImpl) list).getHead();
+        Fragment<Integer> head = ((LockFreeLinkedArrayList) list).getHead();
         assertEquals(101, head.getCurrentIndex());
         assertEquals(IntStream.range(0, 100).boxed().collect(toList()), head.getAll());
         assertTrue(head.getNextFragment().isPresent());
@@ -85,7 +85,7 @@ public class LockFreeListImplTest {
      */
     @Test
     public void testRemove4() {
-        LockFreeList<Integer> list = new LockFreeListImpl<>(100);
+        LockFreeList<Integer> list = new LockFreeLinkedArrayList<>(100);
         IntStream.range(0, 250).forEach(e -> list.append(e));
         assertEquals(250, list.size());
         IntStream.range(200, 250).forEach(e -> list.remove(e));
@@ -93,7 +93,7 @@ public class LockFreeListImplTest {
         List<Integer> verifyList = IntStream.range(0, 200).boxed().collect(toList());
         assertEquals(verifyList, list.stream().collect(toList()));
 
-        Fragment<Integer> head = ((LockFreeListImpl) list).getHead();
+        Fragment<Integer> head = ((LockFreeLinkedArrayList) list).getHead();
         assertEquals(101, head.getCurrentIndex());
         assertEquals(IntStream.range(0, 100).boxed().collect(toList()), head.getAll());
         assertTrue(head.getNextFragment().isPresent());
@@ -114,14 +114,14 @@ public class LockFreeListImplTest {
      */
     @Test
     public void testRemove5() {
-        LockFreeList<Integer> list = new LockFreeListImpl<>(100);
+        LockFreeList<Integer> list = new LockFreeLinkedArrayList<>(100);
         IntStream.range(0, 100).forEach(e -> list.append(e));
         assertEquals(100, list.size());
         IntStream.range(0, 100).forEach(e -> list.remove(e));
         assertEquals(0, list.size());
         assertEquals(new ArrayList<>(), list.stream().collect(toList()));
 
-        Fragment<Integer> head = ((LockFreeListImpl) list).getHead();
+        Fragment<Integer> head = ((LockFreeLinkedArrayList) list).getHead();
         assertEquals(0, head.getCurrentIndex());
         assertEquals(new ArrayList<>(), head.getAll());
         assertFalse(head.getNextFragment().isPresent());
@@ -133,7 +133,7 @@ public class LockFreeListImplTest {
      */
     @Test
     public void testRemove6() {
-        LockFreeList<Integer> list = new LockFreeListImpl<>(100);
+        LockFreeList<Integer> list = new LockFreeLinkedArrayList<>(100);
         IntStream.range(0, 300).forEach(e -> list.append(e));
         assertEquals(300, list.size());
         IntStream.range(0, 100).forEach(e -> list.remove(e));
@@ -141,7 +141,7 @@ public class LockFreeListImplTest {
         List<Integer> verifyList = IntStream.range(100, 300).boxed().collect(toList());
         assertEquals(verifyList, list.stream().collect(toList()));
 
-        Fragment<Integer> head = ((LockFreeListImpl) list).getHead();
+        Fragment<Integer> head = ((LockFreeLinkedArrayList) list).getHead();
         assertEquals(101, head.getCurrentIndex());
         assertEquals(IntStream.range(100, 200).boxed().collect(toList()), head.getAll());
         assertTrue(head.getNextFragment().isPresent());

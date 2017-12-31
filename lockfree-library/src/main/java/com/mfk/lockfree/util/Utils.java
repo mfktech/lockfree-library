@@ -2,6 +2,7 @@ package com.mfk.lockfree.util;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public final class Utils {
     private Utils() {

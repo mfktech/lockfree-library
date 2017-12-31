@@ -12,7 +12,8 @@ import java.util.stream.IntStream;
 class Fragment<T> {
     private final int maxSize;
     private final Object[] elements;
-    private final AtomicInteger last = new AtomicInteger(0);
+    private final AtomicInteger tail = new AtomicInteger(0);
+    private final AtomicInteger head = new AtomicInteger(0);
     private AtomicReference<Fragment<T>> nextRef = new AtomicReference<>();
 
     Fragment(final int maxSize) {
@@ -39,7 +40,7 @@ class Fragment<T> {
 
     boolean add(final T element) {
         try {
-            elements[last.getAndIncrement()] = element;
+            elements[tail.getAndIncrement()] = element;
             return true;
         } catch (IndexOutOfBoundsException ignore) {
             return false;
@@ -52,10 +53,26 @@ class Fragment<T> {
                 .findFirst();
     }
 
-    void remove(final int index) {
+    Optional<T> remove(final int index) {
         if (index < maxSize) {
+            Object elem = elements[index];
             elements[index] = null;
+            return optional(elem);
         }
+
+        return optional(null);
+    }
+
+    Optional<T> removeFirst() {
+        Optional<T> elem = Optional.empty();
+        while (!elem.isPresent() && head.get() < elements.length && head.get() < tail.get()) {
+            int localHead = head.get();
+            if (head.compareAndSet(localHead, localHead + 1)) {
+                elem = remove(localHead);
+            }
+        }
+
+        return elem;
     }
 
     boolean isEmpty() {
@@ -63,16 +80,15 @@ class Fragment<T> {
     }
 
     boolean isWritable() {
-        return last.get() < maxSize;
+        return tail.get() < maxSize;
     }
 
     int getCurrentIndex() {
-        return last.get();
+        return tail.get();
     }
 
-    @SuppressWarnings("unchecked")
     Optional<T> get(final int index) {
-        return Optional.ofNullable(index >= maxSize ? null : (T) elements[index]);
+        return optional(index >= maxSize ? null : elements[index]);
     }
 
     @SuppressWarnings("unchecked")
@@ -84,5 +100,10 @@ class Fragment<T> {
 
     int getMaxSize() {
         return maxSize;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Optional<T> optional(Object element) {
+        return Optional.ofNullable((T) element);
     }
 }
