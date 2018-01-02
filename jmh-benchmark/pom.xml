@@ -6,7 +6,7 @@
 
     <parent>
         <groupId>com.mfk.lockfree</groupId>
-        <artifactId>lockfree-collections</artifactId>
+        <artifactId>lockfree-library-parent</artifactId>
         <version>1.0-SNAPSHOT</version>
     </parent>
 

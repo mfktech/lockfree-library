@@ -72,11 +72,6 @@ class LockFreeLinkedArrayList<T> implements LockFreeList<T> {
         }
 
         return Optional.empty();
-//        Optional<T> optElem = head.removeFirst();
-//        if (optElem.isPresent()) {
-//            removeFragment(null, head);
-//        }
-//        return optElem;
     }
 
     @Override
