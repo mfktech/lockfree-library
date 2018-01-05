@@ -8,7 +8,6 @@ import java.util.stream.StreamSupport;
 class LockFreeLinkedArrayList<T> implements LockFreeList<T> {
     private final int maxFragmentSize;
     private final LongAdder total = new LongAdder();
-    private final LongAdder removed = new LongAdder();
     private Fragment<T> head;
     private Fragment<T> tail;
 
@@ -76,7 +75,7 @@ class LockFreeLinkedArrayList<T> implements LockFreeList<T> {
 
     @Override
     public long size() {
-        return total.longValue() - removed.longValue();
+        return total.longValue();
     }
 
     @Override
@@ -126,7 +125,7 @@ class LockFreeLinkedArrayList<T> implements LockFreeList<T> {
     }
 
     private void removeFragment(Fragment<T> prev, Fragment<T> thisFragment) {
-        removed.increment();
+        total.decrement();
         Optional<Fragment<T>> optNextFragment = thisFragment.getNextFragment();
 
         if (thisFragment.isEmpty() && !thisFragment.isWritable()) {
