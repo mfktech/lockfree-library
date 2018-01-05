@@ -27,7 +27,7 @@ import static java.util.stream.Stream.concat;
 public class LockFreeQueueBenchmark {
     @Benchmark
     public long measureLockFreeQueue() throws Exception {
-        LockFreeQueue<DataStub> queue = LockFreeQueue.newUnboundedQueue();
+        LockFreeQueue<DataStub> queue = LockFreeQueue.newQueue();
         return performOp(queue::add, () -> queue.poll().orElse(null));
     }
 

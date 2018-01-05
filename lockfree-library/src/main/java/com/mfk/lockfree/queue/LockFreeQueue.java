@@ -8,8 +8,12 @@ import java.util.Optional;
  * @param <T> the type of contained elements.
  */
 public interface LockFreeQueue<T> {
-    static <E> LockFreeQueue<E> newUnboundedQueue() {
+    static <E> LockFreeQueue<E> newQueue() {
         return new LockFreeLinkedArrayQueue<>(1000);
+    }
+
+    static <E> LockFreeQueue<E> newQueue(final int fragmentSize) {
+        return new LockFreeLinkedArrayQueue<>(fragmentSize);
     }
 
     /**

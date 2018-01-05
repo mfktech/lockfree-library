@@ -8,10 +8,60 @@ import java.util.List;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static com.mfk.lockfree.util.Utils.intr;
 import static java.util.stream.Collectors.toList;
 import static junit.framework.TestCase.*;
 
 public class LockFreeLinkedArrayListTest {
+    /**
+     * Tests append
+     */
+    @Test
+    public void testAppend1() {
+        LockFreeList<Integer> list = new LockFreeLinkedArrayList<>(100);
+        intr(100).forEach(e -> list.append(e));
+        assertEquals(100, list.size());
+
+        LockFreeLinkedArrayList lockFreeListImpl = (LockFreeLinkedArrayList) list;
+        assertNotNull(lockFreeListImpl.getHead());
+        assertFalse(lockFreeListImpl.getHead().getNextFragment().isPresent());
+    }
+
+    /**
+     * Tests removing first few objects from the list
+     */
+    @Test
+    public void testRemoveFirst1() {
+        LockFreeList<Integer> list = new LockFreeLinkedArrayList<>(100);
+        intr(100).forEach(e -> list.append(e));
+        assertEquals(100, list.size());
+        intr(10).forEach(e -> list.removeFirst());
+        assertEquals(90, list.size());
+        assertEquals(IntStream.range(10, 100).boxed().collect(toList()), list.stream().collect(toList()));
+
+        LockFreeLinkedArrayList lockFreeListImpl = (LockFreeLinkedArrayList) list;
+        assertNotNull(lockFreeListImpl.getHead());
+        assertFalse(lockFreeListImpl.getHead().getNextFragment().isPresent());
+    }
+
+    /**
+     * Tests removing the whole first fragment from the list. The original head should be detached and the second
+     * fragment should become the head.
+     */
+    @Test
+    public void testRemoveFirst2() {
+        LockFreeList<Integer> list = new LockFreeLinkedArrayList<>(100);
+        intr(150).forEach(e -> list.append(e));
+        assertEquals(150, list.size());
+        intr(100).forEach(e -> list.removeFirst());
+        assertEquals(50, list.size());
+        assertEquals(IntStream.range(100, 150).boxed().collect(toList()), list.stream().collect(toList()));
+
+        LockFreeLinkedArrayList lockFreeListImpl = (LockFreeLinkedArrayList) list;
+        assertNotNull(lockFreeListImpl.getHead());
+        assertFalse(lockFreeListImpl.getHead().getNextFragment().isPresent());
+    }
+
     /**
      * Tests when only one element needs to be deleted.
      */
@@ -151,32 +201,4 @@ public class LockFreeLinkedArrayListTest {
         assertEquals(IntStream.range(200, 300).boxed().collect(toList()), next.getAll());
         assertFalse(next.getNextFragment().isPresent());
     }
-
-//
-//    @Test
-//    public void testAppendMultiThreaded() throws ExecutionException, InterruptedException {
-//    }
-//
-//    @Test
-//    public void testAppendMultiThreadedWithSynchronizedList() throws ExecutionException, InterruptedException {
-//        List<String> list = Collections.synchronizedList(new LinkedList<>());
-//
-//        CompletableFuture<Void> fut1 = createFutureWithList("T1", list);
-//        CompletableFuture<Void> fut2 = createFutureWithList("T2", list);
-//        CompletableFuture<Void> fut3 = createFutureWithList("T3", list);
-//        CompletableFuture<Void> fut4 = createFutureWithList("T4", list);
-//
-//        CompletableFuture<Void> completableFuture = CompletableFuture.allOf(fut1, fut2, fut3, fut4);
-//        completableFuture.get();
-//        long count = 0;
-//
-//        System.out.println("Count: " + list.stream().count());
-//    }
-//
-//
-//    private CompletableFuture<Void> createFutureWithList(final String prefix, final List<String> list) {
-//        return CompletableFuture.runAsync(() ->
-//                IntStream.range(0, 1000000).forEach(i -> list.add(prefix + ":" + i))
-//        );
-//    }
 }
