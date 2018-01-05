@@ -37,14 +37,14 @@ public class LockFreeQueueBenchmark {
         return performOp(queue::add, queue::poll);
     }
 
-    private long performOp(Consumer<DataStub> consumer, Supplier<DataStub> supplier) throws Exception {
+    private long performOp(Consumer<DataStub> consumer, Supplier<DataStub> producer) throws Exception {
         final int wThreads = 2;
         final int rThreads = 2;
         final int writeCount = 1024 * 1024;
         final int pollCount = writeCount * wThreads / rThreads;
 
         Runnable writer = () -> intr(writeCount).mapToObj(DataStub::new).forEach(consumer);
-        Supplier<?> reader = () -> intr(pollCount).mapToObj(i -> supplier).count();
+        Supplier<?> reader = () -> intr(pollCount).mapToObj(i -> producer).count();
 
         List<CompletableFuture<?>> wFut = intr(wThreads).mapToObj(i -> runAsync(writer)).collect(toList());
         List<CompletableFuture<?>> rFut = intr(rThreads).mapToObj(i -> supplyAsync(reader)).collect(toList());
@@ -57,7 +57,7 @@ public class LockFreeQueueBenchmark {
                 .sum();
     }
 
-    static class DataStub {
+    private static class DataStub {
         private final int data;
 
         private DataStub(int data) {

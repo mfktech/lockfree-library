@@ -4,7 +4,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-public class LockFreeMapImpl<K, V> implements LockFreeMap<K, V> {
+public class LockFreeLinkedArrayMap<K, V> implements LockFreeMap<K, V> {
     @Override
     public boolean put(K key, V value) {
         return false;
