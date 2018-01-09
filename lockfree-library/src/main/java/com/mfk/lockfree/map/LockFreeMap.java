@@ -5,9 +5,19 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 public interface LockFreeMap<K, V> {
-    boolean put(K key, V value);
+    static <E, D> LockFreeMap<E, D> newMap() {
+        return new LockFreeLinkedArrayMap<>(1000);
+    }
+
+    static <E, D> LockFreeMap<E, D> newMap(final int mapSize) {
+        return new LockFreeLinkedArrayMap<>(mapSize);
+    }
+
+    Optional<V> put(K key, V value);
 
     Optional<V> get(K key);
+
+    boolean remove(K key);
 
     long size();
 

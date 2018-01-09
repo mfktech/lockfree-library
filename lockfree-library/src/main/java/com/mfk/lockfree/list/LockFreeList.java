@@ -44,9 +44,9 @@ public interface LockFreeList<T> {
      * Removes the object from the list in O(n).
      *
      * @param element the item to be deleted
-     * @return true if failed if removed successfully, false otherwise.
+     * @return the removed object if existed.
      */
-    boolean remove(final T element);
+    Optional<T> remove(final T element);
 
     /**
      * Gets and removes the first element from the list.

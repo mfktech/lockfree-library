@@ -30,7 +30,7 @@ class LockFreeLinkedArrayList<T> implements LockFreeList<T> {
     }
 
     @Override
-    public boolean remove(T element) {
+    public Optional<T> remove(T element) {
         Optional<Fragment<T>> optFragment = Optional.of(head);
         Optional<Fragment<T>> optPrev = Optional.empty();
 
@@ -39,17 +39,16 @@ class LockFreeLinkedArrayList<T> implements LockFreeList<T> {
             OptionalInt optIndex = thisFragment.find(element);
 
             if (optIndex.isPresent()) {
-                thisFragment.remove(optIndex.getAsInt());
+                final Optional<T> removedObj = thisFragment.remove(optIndex.getAsInt());
                 removeFragment(optPrev.orElse(null), thisFragment);
-                return true;
+                return removedObj;
             }
 
             optPrev = optFragment;
             optFragment = thisFragment.getNextFragment();
         }
 
-        return false;
-
+        return Optional.empty();
     }
 
     @Override
