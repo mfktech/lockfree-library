@@ -1,6 +1,7 @@
 package com.mfk.lockfree.list;
 
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /**
@@ -40,6 +41,8 @@ public interface LockFreeList<T> {
      */
     boolean append(final T element);
 
+    Stream<T> findAll(final Predicate<T> predicate);
+
     /**
      * Removes the object from the list in O(n).
      *
@@ -47,6 +50,8 @@ public interface LockFreeList<T> {
      * @return the removed object if existed.
      */
     Optional<T> remove(final T element);
+
+    Stream<T> removeAll(final Predicate<T> predicate);
 
     /**
      * Gets and removes the first element from the list.
@@ -56,7 +61,7 @@ public interface LockFreeList<T> {
     Optional<T> removeFirst();
 
     /**
-     * Gets the size of the list in O(1); the total number of items is maintained on every add/remove operation.
+     * Gets the size of the list in O(n); equivalent to {@code list.stream().count()}.
      *
      * @return the total size of list.
      */

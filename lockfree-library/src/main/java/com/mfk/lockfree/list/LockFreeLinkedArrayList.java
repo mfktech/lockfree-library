@@ -1,13 +1,12 @@
 package com.mfk.lockfree.list;
 
 import java.util.*;
-import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 class LockFreeLinkedArrayList<T> implements LockFreeList<T> {
     private final int maxFragmentSize;
-    private final LongAdder total = new LongAdder();
     private Fragment<T> head;
     private Fragment<T> tail;
 
@@ -25,8 +24,12 @@ class LockFreeLinkedArrayList<T> implements LockFreeList<T> {
             this.tail = tail.createOrGetNextFragment();
         }
 
-        total.increment();
         return true;
+    }
+
+    @Override
+    public Stream<T> findAll(final Predicate<T> predicate) {
+        return this.stream().filter(predicate);
     }
 
     @Override
@@ -36,8 +39,8 @@ class LockFreeLinkedArrayList<T> implements LockFreeList<T> {
 
         while (optFragment.isPresent()) {
             Fragment<T> thisFragment = optFragment.get();
-            OptionalInt optIndex = thisFragment.find(element);
 
+            OptionalInt optIndex = thisFragment.find(element);
             if (optIndex.isPresent()) {
                 final Optional<T> removedObj = thisFragment.remove(optIndex.getAsInt());
                 removeFragment(optPrev.orElse(null), thisFragment);
@@ -49,6 +52,28 @@ class LockFreeLinkedArrayList<T> implements LockFreeList<T> {
         }
 
         return Optional.empty();
+    }
+
+    @Override
+    public Stream<T> removeAll(Predicate<T> predicate) {
+        Optional<Fragment<T>> optFragment = Optional.of(head);
+        Optional<Fragment<T>> optPrev = Optional.empty();
+        List<T> removed = new ArrayList<>();
+
+        while (optFragment.isPresent()) {
+            Fragment<T> thisFragment = optFragment.get();
+            final Optional<Fragment<T>> optFinalPrev = optPrev;
+
+            thisFragment.find(predicate).forEach(i -> {
+                thisFragment.remove(i).ifPresent(removed::add);
+                removeFragment(optFinalPrev.orElse(null), thisFragment);
+            });
+
+            optPrev = optFragment;
+            optFragment = thisFragment.getNextFragment();
+        }
+
+        return removed.stream();
     }
 
     @Override
@@ -74,7 +99,7 @@ class LockFreeLinkedArrayList<T> implements LockFreeList<T> {
 
     @Override
     public long size() {
-        return total.longValue();
+        return this.stream().count();
     }
 
     @Override
@@ -124,7 +149,6 @@ class LockFreeLinkedArrayList<T> implements LockFreeList<T> {
     }
 
     private void removeFragment(Fragment<T> prev, Fragment<T> thisFragment) {
-        total.decrement();
         Optional<Fragment<T>> optNextFragment = thisFragment.getNextFragment();
 
         if (thisFragment.isEmpty() && !thisFragment.isWritable()) {

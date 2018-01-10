@@ -3,8 +3,10 @@ package com.mfk.lockfree.list;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
+import java.util.function.Predicate;
 import java.util.stream.IntStream;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * Created by farhankhan on 12/16/17.
@@ -53,6 +55,12 @@ class Fragment<T> {
                 .findFirst();
     }
 
+    @SuppressWarnings("unchecked")
+    IntStream find(final Predicate<T> predicate) {
+        return IntStream.range(0, this.elements.length)
+                .filter(i -> Objects.nonNull(elements[i]) && predicate.test((T) elements[i]));
+    }
+
     Optional<T> remove(final int index) {
         if (index < maxSize) {
             Object elem = elements[index];
@@ -91,15 +99,15 @@ class Fragment<T> {
         return optional(index >= maxSize ? null : elements[index]);
     }
 
+    int getMaxSize() {
+        return maxSize;
+    }
+
     @SuppressWarnings("unchecked")
     List<T> getAll() {
         return Arrays.stream(elements).filter(Objects::nonNull)
                 .map(t -> (T) t)
-                .collect(Collectors.toList());
-    }
-
-    int getMaxSize() {
-        return maxSize;
+                .collect(toList());
     }
 
     @SuppressWarnings("unchecked")

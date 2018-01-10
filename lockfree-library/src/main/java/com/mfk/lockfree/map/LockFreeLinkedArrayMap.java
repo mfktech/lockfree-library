@@ -2,59 +2,77 @@ package com.mfk.lockfree.map;
 
 import com.mfk.lockfree.list.LockFreeList;
 
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.*;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.groupingBy;
+
 class LockFreeLinkedArrayMap<K, V> implements LockFreeMap<K, V> {
-    private final LockFreeList<Pair<K, V>>[] hashedArray;
+    private final LockFreeList<Pair<K, V>>[] hashArray;
 
     LockFreeLinkedArrayMap(final int mapSize) {
-        this.hashedArray = new LockFreeList[mapSize];
-        IntStream.range(0, mapSize).forEach(i -> this.hashedArray[i] = LockFreeList.newList(100));
+        this.hashArray = new LockFreeList[mapSize];
+        IntStream.range(0, mapSize).forEach(i -> this.hashArray[i] = LockFreeList.newList(100));
     }
 
     @Override
-    public Optional<V> put(K key, V value) {
-        if (key == null) Optional.empty();
-        final int hash = key.hashCode();
+    public void put(K key, V value) {
+        if (key == null) return;
+
+        final int hash = getHash(key);
         Pair<K, V> pair = new Pair<>(key, value);
-        final Optional<Pair<K, V>> removedObj = hashedArray[hash].remove(pair);
-        hashedArray[hash].append(pair);
-        return removedObj.map(p -> p.v);
+        hashArray[hash].append(pair);
     }
 
     @Override
     public Optional<V> get(K key) {
-        if (key == null) Optional.empty();
-        final int hash = getHash(key);
-        return hashedArray[hash].stream().filter(p -> Objects.equals(p.k, key)).findFirst().map(p -> p.v);
+        if (key == null) return Optional.empty();
+
+        return this.hashArray[getHash(key)]
+                .findAll(p -> Objects.equals(p.k, key))
+                .map(p -> p.v)
+                .reduce((f, s) -> s);
+    }
+
+    @Override
+    public Stream<V> getAll(K key) {
+        if (key == null) return Stream.empty();
+
+        return this.hashArray[getHash(key)]
+                .findAll(p -> Objects.equals(p.k, key))
+                .map(p -> p.v);
     }
 
     @Override
     public boolean remove(K key) {
-        if (key == null) Optional.empty();
-        final int hash = key.hashCode();
-        Pair<K, V> pair = new Pair<>(key, null);
-        return hashedArray[hash].remove(pair).isPresent();
+        return key != null && hashArray[getHash(key)].removeAll(p -> Objects.equals(p.k, key)).findFirst().isPresent();
     }
 
     @Override
     public long size() {
-        return IntStream.range(0, hashedArray.length).mapToLong(i -> hashedArray[i].size()).sum();
+        return Arrays.stream(hashArray).mapToLong(l -> l.stream()
+                .collect(groupingBy(p -> p.k)).size()).sum();
     }
 
     @Override
     public Stream<Map.Entry<K, V>> stream() {
-        return null;
+        return Arrays.stream(hashArray)
+                .map(l -> l.stream().collect(groupingBy(p -> p.k)))
+                .flatMap(this::convertGroupedMap);
     }
 
-    int getHash(K key) {
-        return key.hashCode() % hashedArray.length;
+    private Stream<Map.Entry<K, V>> convertGroupedMap(Map<K, List<Pair<K, V>>> groupedBy) {
+        return groupedBy.entrySet().stream()
+                .map(e -> {
+                    Optional<Pair<K, V>> reduced = e.getValue().stream().reduce((f, s) -> s);
+                    return reduced.map(p -> new AbstractMap.SimpleEntry<>(e.getKey(), p.v));
+                }).flatMap(Optional::stream);
+    }
+
+
+    private int getHash(K key) {
+        return key.hashCode() % hashArray.length;
     }
 
     private static class Pair<K, V> {

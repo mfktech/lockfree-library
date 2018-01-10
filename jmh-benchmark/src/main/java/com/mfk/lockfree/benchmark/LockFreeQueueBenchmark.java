@@ -40,7 +40,7 @@ public class LockFreeQueueBenchmark {
     private long performOp(Consumer<DataStub> consumer, Supplier<DataStub> producer) throws Exception {
         final int wThreads = 2;
         final int rThreads = 2;
-        final int writeCount = 1024 * 1024;
+        final int writeCount = 1000 * 1000;
         final int pollCount = writeCount * wThreads / rThreads;
 
         Runnable writer = () -> intr(writeCount).mapToObj(DataStub::new).forEach(consumer);
