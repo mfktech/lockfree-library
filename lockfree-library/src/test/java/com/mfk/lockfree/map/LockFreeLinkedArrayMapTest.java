@@ -2,9 +2,10 @@ package com.mfk.lockfree.map;
 
 import org.junit.Test;
 
+import java.util.*;
 import java.util.AbstractMap.SimpleEntry;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -12,7 +13,7 @@ import static com.mfk.lockfree.util.Utils.intr;
 import static java.util.concurrent.CompletableFuture.runAsync;
 import static junit.framework.TestCase.*;
 
-public class LockFreeMapTest {
+public class LockFreeLinkedArrayMapTest {
     /**
      * Tests get method with no collisions and duplicates
      */
@@ -46,6 +47,20 @@ public class LockFreeMapTest {
         assertEquals(new StubValue(394), lockFreeMap.get(new StubKey(394)).orElse(null));
         assertEquals(new StubValue(991), lockFreeMap.get(new StubKey(991)).orElse(null));
         assertEquals(new StubValue(999), lockFreeMap.get(new StubKey(999)).orElse(null));
+    }
+
+    @Test
+    public void testGetAll() {
+        LockFreeMap<String, String> map = LockFreeMap.newMap();
+        map.put("key1", "value1");
+        map.put("key1", "newValue1");
+
+        final List<String> values = map.getAll("key1").collect(Collectors.toList());
+        assertEquals(Arrays.asList("value1", "newValue1"), values);
+
+        final Optional<String> value = map.get("key1");
+        assertTrue(value.isPresent());
+        assertEquals("newValue1", "newValue1", value.get());
     }
 
     /**
@@ -149,6 +164,17 @@ public class LockFreeMapTest {
                 .mapToObj(i -> runAsync(() -> putObjects(lockFreeMap, 0, 100)));
         CompletableFuture.allOf(wFut.toArray(CompletableFuture[]::new)).get();
         assertEquals(100, lockFreeMap.size());
+    }
+
+    @Test
+    public void testMultiThreadedRemove() throws Exception {
+        LockFreeMap<StubKey, StubValue> lockFreeMap = LockFreeMap.newMap(1000);
+        putObjects(lockFreeMap, 0, 10000);
+        int threads = 4;
+        Stream<CompletableFuture<?>> wFut = intr(threads)
+                .mapToObj(i -> runAsync(() -> intr(10000).forEach(ind -> lockFreeMap.remove(new StubKey(ind)))));
+        CompletableFuture.allOf(wFut.toArray(CompletableFuture[]::new)).get();
+        assertEquals(0, lockFreeMap.size());
     }
 
     private void putObjects(LockFreeMap<StubKey, StubValue> lockFreeMap, int start, int end) {

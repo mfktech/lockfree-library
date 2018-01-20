@@ -55,10 +55,12 @@ class Fragment<T> {
                 .findFirst();
     }
 
-    @SuppressWarnings("unchecked")
     IntStream find(final Predicate<T> predicate) {
         return IntStream.range(0, this.elements.length)
-                .filter(i -> Objects.nonNull(elements[i]) && predicate.test((T) elements[i]));
+                .filter(i -> {
+                    Object obj = elements[i];
+                    return Objects.nonNull(obj) && predicate.test(castNonNullElement(obj));
+                });
     }
 
     Optional<T> remove(final int index) {
@@ -103,15 +105,18 @@ class Fragment<T> {
         return maxSize;
     }
 
-    @SuppressWarnings("unchecked")
     List<T> getAll() {
         return Arrays.stream(elements).filter(Objects::nonNull)
-                .map(t -> (T) t)
+                .map(this::castNonNullElement)
                 .collect(toList());
     }
 
-    @SuppressWarnings("unchecked")
     private Optional<T> optional(Object element) {
-        return Optional.ofNullable((T) element);
+        return Optional.ofNullable(castNonNullElement(element));
+    }
+
+    @SuppressWarnings("unchecked")
+    private T castNonNullElement(Object element) {
+        return element == null ? null : (T) element;
     }
 }
