@@ -15,7 +15,7 @@ import java.util.stream.Stream;
  * reaching/exceeding max size of the underlying lookup table. It works very efficiently if the map is sized
  * appropriately.<br>
  * For example, for 75 keys the map should be created with the {@code maxSize} of 100.
- * Use {@link #newMap(int)} to create the map with the max size of the underlying lookup table.
+ * Use {@link #newMap(int, int)} to create the map with the max size of the underlying lookup table.
  * </li>
  * <p>
  * <li>The value objects are never overwritten if {@link #put(Object, Object)} is called multiple times for the same
@@ -37,7 +37,7 @@ public interface LockFreeMap<K, V> {
      * @return created map with default configuration.
      */
     static <K, V> LockFreeMap<K, V> newMap() {
-        return new LockFreeLinkedArrayMap<>(1000);
+        return newMap(1000, 1000);
     }
 
     /**
@@ -49,7 +49,20 @@ public interface LockFreeMap<K, V> {
      * @return created map with default configuration.
      */
     static <K, V> LockFreeMap<K, V> newMap(final int mapSize) {
-        return new LockFreeLinkedArrayMap<>(mapSize);
+        return new LockFreeLinkedArrayMap<>(mapSize, 1000);
+    }
+
+    /**
+     * Static factory method that creates the map with the given size.
+     *
+     * @param mapSize the size of the map.
+     * @param fragmentSize the size of the fragment of the Linked-Array list which is used to handle collisions
+     * @param <K>     the type of the key
+     * @param <V>     the type of the value
+     * @return created map with default configuration.
+     */
+    static <K, V> LockFreeMap<K, V> newMap(final int mapSize, final int fragmentSize) {
+        return new LockFreeLinkedArrayMap<>(mapSize, fragmentSize);
     }
 
     /**

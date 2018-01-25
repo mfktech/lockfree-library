@@ -43,12 +43,12 @@ java -jar jmh-benchmark/target/jmh-benchmark.jar "com.mfk.lockfree.benchmark.Loc
 ```
 
 #### 5. Map
-A concurrent map which provides thread-safe operations using Lock-Free algorithms (Atomic classes). 
-This map relies on the same rules for {@code equals} and {@code hashCode} as in Java to put and 
-lookup elements. Please do internet search to learn more about hashCode contract in Java.  
+A concurrent Map which provides thread-safe operations using Lock-Free algorithms (Atomic classes). 
+This map relies on the same rules for _equals_ and _hashCode_ as in Java to put and 
+lookup elements. Please do internet search to learn more about hashCode/equals contract in Java.  
 
 #### 5.1. Insertion/Put
-Insertion is thread-safe which allows to insert/put elements concurrently. It is highly 
+Insert or Put operation is thread-safe which allows us to insert/put elements concurrently. It is highly 
 recommended to provide efficient and consistent implementation of _hashCode_ method. 
 
 One important difference from Java's Map is that the put operation will not overwrite the existing value if put 
@@ -65,7 +65,8 @@ using _getAll_ method.
 ```
 
 #### 5.2. Retrieval
-Assuming _equals_ method is implemented properly, the _value_ objects can be retrieved by using the same key, as shown below
+Assuming _equals_ method is implemented properly, the _value_ objects can be retrieved by using the same key, 
+as shown below
 ```
     final LockFreeMap<String, String> map = LockFreeMap.newMap();
     map.put("key1", "value1");
@@ -80,7 +81,7 @@ _getAll_ method can be used to retrieve all previously put values for the same k
 
     final List<String> values = map.getAll("key1").collect(Collectors.toList());
     
-    // should return all previously set values for the key 'key1'
+    // getAll method should return all previously set values for the key 'key1'
     assertEquals(Arrays.asList("value1", "newValue1"), values);
 
     // get method will return the last set value.  
@@ -89,6 +90,21 @@ _getAll_ method can be used to retrieve all previously put values for the same k
     assertEquals("newValue1", "newValue1", value.get());
 ```
 
-If there exists multiple values for the same key, then _get_ method will return the value which was last set.
-However, in highly concurrent environment, the term 'last' could be relative. In that case _getAll_ should be used 
-to get other potential values.  
+If there exists multiple values for the same key, then _get_ method will return the value which was put last.
+However, in highly concurrent environment, the "last" element would be in-deterministic because of the race condition. 
+In that case _getAll_ should be used to get all the values for that key.
+     
+#### 5.3. Deletion
+_remove_ method can be used to remove all values for the given key, as shown below
+```
+    LockFreeMap<String, String> map = LockFreeMap.newMap();
+    map.put("k1", "v1");
+    map.put("k1", "v2");
+    assertEquals(Arrays.asList("v1", "v2"), map.getAll("k1").collect(toList()));
+
+    map.remove("k1");
+    assertEquals(Collections.emptyList(), map.getAll("k1").collect(toList()));
+```     
+
+#### 5.4. JMH Benchmarking
+java -jar jmh-benchmark/target/jmh-benchmark.jar "com.mfk.lockfree.benchmark.map.GetBenchmark.*"

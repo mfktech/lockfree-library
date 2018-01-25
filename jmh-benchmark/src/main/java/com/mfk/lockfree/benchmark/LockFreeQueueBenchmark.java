@@ -27,23 +27,23 @@ import static java.util.stream.Stream.concat;
 public class LockFreeQueueBenchmark {
     @Benchmark
     public long measureLockFreeQueue() throws Exception {
-        LockFreeQueue<DataStub> queue = LockFreeQueue.newQueue();
+        LockFreeQueue<Data> queue = LockFreeQueue.newQueue();
         return performOp(queue::add, () -> queue.poll().orElse(null));
     }
 
     @Benchmark
     public long measureJDKQueue() throws Exception {
-        ConcurrentLinkedQueue<DataStub> queue = new ConcurrentLinkedQueue<>();
+        ConcurrentLinkedQueue<Data> queue = new ConcurrentLinkedQueue<>();
         return performOp(queue::add, queue::poll);
     }
 
-    private long performOp(Consumer<DataStub> consumer, Supplier<DataStub> producer) throws Exception {
+    private long performOp(Consumer<Data> consumer, Supplier<Data> producer) throws Exception {
         final int wThreads = 2;
         final int rThreads = 2;
         final int writeCount = 1000 * 1000;
         final int pollCount = writeCount * wThreads / rThreads;
 
-        Runnable writer = () -> intr(writeCount).mapToObj(DataStub::new).forEach(consumer);
+        Runnable writer = () -> intr(writeCount).mapToObj(Data::new).forEach(consumer);
         Supplier<?> reader = () -> intr(pollCount).mapToObj(i -> producer).count();
 
         List<CompletableFuture<?>> wFut = intr(wThreads).mapToObj(i -> runAsync(writer)).collect(toList());
@@ -55,13 +55,5 @@ public class LockFreeQueueBenchmark {
                 .filter(Objects::nonNull)
                 .mapToLong(o -> Long.parseLong(o.toString()))
                 .sum();
-    }
-
-    private static class DataStub {
-        private final int data;
-
-        private DataStub(int data) {
-            this.data = data;
-        }
     }
 }

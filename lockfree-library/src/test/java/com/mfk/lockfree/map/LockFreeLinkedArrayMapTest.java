@@ -2,15 +2,15 @@ package com.mfk.lockfree.map;
 
 import org.junit.Test;
 
-import java.util.*;
 import java.util.AbstractMap.SimpleEntry;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static com.mfk.lockfree.util.Utils.intr;
 import static java.util.concurrent.CompletableFuture.runAsync;
+import static java.util.stream.Collectors.toList;
 import static junit.framework.TestCase.*;
 
 public class LockFreeLinkedArrayMapTest {
@@ -34,7 +34,7 @@ public class LockFreeLinkedArrayMapTest {
      */
     @Test
     public void testGet2() {
-        LockFreeMap<StubKey, StubValue> lockFreeMap = LockFreeMap.newMap(100);
+        LockFreeMap<StubKey, StubValue> lockFreeMap = LockFreeMap.newMap(100, 100);
         intr(1000).mapToObj(i -> new SimpleEntry<>(new StubKey(i), new StubValue(i)))
                 .forEach(e -> lockFreeMap.put(e.getKey(), e.getValue()));
         // Duplicates
@@ -55,7 +55,7 @@ public class LockFreeLinkedArrayMapTest {
         map.put("key1", "value1");
         map.put("key1", "newValue1");
 
-        final List<String> values = map.getAll("key1").collect(Collectors.toList());
+        final List<String> values = map.getAll("key1").collect(toList());
         assertEquals(Arrays.asList("value1", "newValue1"), values);
 
         final Optional<String> value = map.get("key1");
@@ -82,7 +82,7 @@ public class LockFreeLinkedArrayMapTest {
 
     @Test
     public void testRemove2() {
-        LockFreeMap<StubKey, StubValue> lockFreeMap = LockFreeMap.newMap(100);
+        LockFreeMap<StubKey, StubValue> lockFreeMap = LockFreeMap.newMap(100, 100);
         intr(1000).mapToObj(i -> new SimpleEntry<>(new StubKey(i), new StubValue(i)))
                 .forEach(e -> lockFreeMap.put(e.getKey(), e.getValue()));
         // duplicates
@@ -97,6 +97,17 @@ public class LockFreeLinkedArrayMapTest {
 
         assertFalse(lockFreeMap.get(new StubKey(437)).isPresent());
         assertFalse(lockFreeMap.get(new StubKey(102)).isPresent());
+    }
+
+    @Test
+    public void testRemove3() {
+        LockFreeMap<String, String> map = LockFreeMap.newMap();
+        map.put("k1", "v1");
+        map.put("k1", "v2");
+        assertEquals(Arrays.asList("v1", "v2"), map.getAll("k1").collect(toList()));
+
+        map.remove("k1");
+        assertEquals(Collections.emptyList(), map.getAll("k1").collect(toList()));
     }
 
     /**
@@ -116,7 +127,7 @@ public class LockFreeLinkedArrayMapTest {
      */
     @Test
     public void testGetEntries2() {
-        LockFreeMap<StubKey, StubValue> lockFreeMap = LockFreeMap.newMap(100);
+        LockFreeMap<StubKey, StubValue> lockFreeMap = LockFreeMap.newMap(100, 100);
         intr(1000).mapToObj(i -> new SimpleEntry<>(new StubKey(i), new StubValue(i)))
                 .forEach(e -> lockFreeMap.put(e.getKey(), e.getValue()));
         // duplicates
@@ -136,7 +147,7 @@ public class LockFreeLinkedArrayMapTest {
 
     @Test
     public void testPutBigSize() {
-        LockFreeMap<StubKey, StubValue> lockFreeMap = LockFreeMap.newMap(1000);
+        LockFreeMap<StubKey, StubValue> lockFreeMap = LockFreeMap.newMap(1000, 1000);
         putObjects(lockFreeMap, 0, 100000);
         assertEquals(100000, lockFreeMap.size());
         assertEquals(new StubValue(21344), lockFreeMap.get(new StubKey(21344)).orElse(null));
@@ -148,7 +159,7 @@ public class LockFreeLinkedArrayMapTest {
 
     @Test
     public void testMultiThreadedPut() throws Exception {
-        LockFreeMap<StubKey, StubValue> lockFreeMap = LockFreeMap.newMap(1000);
+        LockFreeMap<StubKey, StubValue> lockFreeMap = LockFreeMap.newMap(1000, 1000);
         int threads = 4;
         Stream<CompletableFuture<?>> wFut = intr(threads)
                 .mapToObj(i -> runAsync(() -> putObjects(lockFreeMap, i * 100, (i * 100) + 100)));
@@ -158,7 +169,7 @@ public class LockFreeLinkedArrayMapTest {
 
     @Test
     public void testMultiThreadedDuplicatesPut() throws Exception {
-        LockFreeMap<StubKey, StubValue> lockFreeMap = LockFreeMap.newMap(100);
+        LockFreeMap<StubKey, StubValue> lockFreeMap = LockFreeMap.newMap(100, 100);
         int threads = 4;
         Stream<CompletableFuture<?>> wFut = intr(threads)
                 .mapToObj(i -> runAsync(() -> putObjects(lockFreeMap, 0, 100)));
@@ -168,7 +179,7 @@ public class LockFreeLinkedArrayMapTest {
 
     @Test
     public void testMultiThreadedRemove() throws Exception {
-        LockFreeMap<StubKey, StubValue> lockFreeMap = LockFreeMap.newMap(1000);
+        LockFreeMap<StubKey, StubValue> lockFreeMap = LockFreeMap.newMap(1000, 1000);
         putObjects(lockFreeMap, 0, 10000);
         int threads = 4;
         Stream<CompletableFuture<?>> wFut = intr(threads)
