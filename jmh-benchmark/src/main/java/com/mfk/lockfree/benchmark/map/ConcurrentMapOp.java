@@ -15,7 +15,7 @@ import static java.util.stream.Collectors.toList;
 public final class ConcurrentMapOp {
 
     public static void performConcurrentPut(final IntConsumer consumer, final int putCount) throws Exception {
-        final int nThreads = 4;
+        final int nThreads = 8;
         ExecutorService executorService = Executors.newFixedThreadPool(nThreads);
 
         Runnable writer = () -> intr(putCount).forEach(consumer);
@@ -26,7 +26,7 @@ public final class ConcurrentMapOp {
 
 
     public static long performConcurrentGet(Function<Key, Value> func) throws Exception {
-        final int nThreads = 4;
+        final int nThreads = 8;
         ExecutorService executorService = Executors.newFixedThreadPool(nThreads);
         final int times = 1_000_1000;
 

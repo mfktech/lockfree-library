@@ -26,10 +26,19 @@ public class LockFreeLinkedArrayQueueTest {
     private static final int KB = 1024;
 
     @Test
-    public void testAdd() {
+    public void testAdd1() {
         LockFreeLinkedArrayQueue<DataStub> queue = new LockFreeLinkedArrayQueue<>(1000);
         getDataObjStream(MB).forEach(queue::add);
         assertEquals(MB, queue.size());
+    }
+
+    @Test
+    public void testAdd2() {
+        LockFreeQueue<String> queue = LockFreeQueue.newQueue();
+        queue.add("element1");
+        queue.add("element2");
+
+        queue.poll().ifPresent(System.out::println);
     }
 
     @Test

@@ -28,22 +28,31 @@ Atomic classes are used for concurrency, which are CAS based (if supported by un
 Please see JMH Benchmarking results to see the comparison between various other collections with the data structures 
 offered in this library.      
 
-#### 4. List
-A non-blocking concurrent list which is highly optimized for concurrent append operation.    
+#### 4. Queue
+A non-blocking and concurrent Queue which provides thread-safe operations using Lock-Free algorithms (Atomic classes).    
 
-#### 4.1. Example
-Following code snippet is an example to append new objects
+#### 4.1. Add/Append
+Add operation allows elements to be appended to the tail concurrently. Following is an example
 ```
-    LockFreeList<DataObject> list = LockFreeList.newList();
-```   
-   
-#### 4.2. JMH Benchmarking
+    LockFreeQueue<String> queue = LockFreeQueue.newQueue();
+    queue.add("element1");
+    queue.add("element2");
+    
+    assertEquals(2, queue.size());
 ```
-java -jar jmh-benchmark/target/jmh-benchmark.jar "com.mfk.lockfree.benchmark.LockFreeQueueBenchmark.*"
+ 
+#### 4.2. Poll
+Poll operation will remove and return the head of the queue. If the queue is empty, then it will return 
+_Optional.empty_ object. Following is an example 
+```
+    LockFreeQueue<String> queue = LockFreeQueue.newQueue();
+    queue.add("element1");
+    
+    queue.poll().ifPresent(System.out::println);
 ```
 
 #### 5. Map
-A concurrent Map which provides thread-safe operations using Lock-Free algorithms (Atomic classes). 
+A non-blocking and concurrent Map which provides thread-safe operations using Lock-Free algorithms (Atomic classes). 
 This map relies on the same rules for _equals_ and _hashCode_ as in Java to put and 
 lookup elements. Please do internet search to learn more about hashCode/equals contract in Java.  
 
@@ -106,5 +115,54 @@ _remove_ method can be used to remove all values for the given key, as shown bel
     assertEquals(Collections.emptyList(), map.getAll("k1").collect(toList()));
 ```     
 
-#### 5.4. JMH Benchmarking
-java -jar jmh-benchmark/target/jmh-benchmark.jar "com.mfk.lockfree.benchmark.map.GetBenchmark.*"
+#### 5.4. LockFreeMap vs ConcurrentMap
+JMH library is used to perform benchmarking between operations of _LockFreeMap_ and _ConcurrentHashMap_.
+
+All the benchmarking classes pertaining to LockFreeMap can be found in _com.mfk.lockfree.benchmark.map_ package. 
+If you are interested in running the benchmarking yourself, then execute the following command after mvn clean package:
+  
+```
+java -jar jmh-benchmark/target/jmh-benchmark.jar "com.mfk.lockfree.benchmark.map.<class name>.*"
+``` 
+
+
+#### 5.4.1. Put Benchmarking
+8 threads put 1000 elements concurrently. Elements produced unique hash code, so there would be 
+less number of collisions. This was repeated 100 times.   
+
+Following is the comparision of Average Response Time (avgt) using JMH benchmarking.
+
+|Benchmark                        |Mode  |Cnt  |Score |  Error  |Units |
+|---------------------------------|------|-----|------|---------|------|
+|PutBenchmark.measureJavaMap      |avgt  | 100  |0.482 | ±0.002  |ms/op |
+|PutBenchmark.measureLockFreeMap  |avgt  | 100  |0.491 | ±0.002  |ms/op |
+
+#### 5.4.2. Put Benchmarking With Collisions
+8 threads put 1000 elements concurrently. The _hashCode_ was poorly implemented to produce high rate of collisions. This was repeated 100 times.   
+
+Following is the comparision of Average Response Time (avgt) using JMH benchmarking.
+
+|Benchmark                                      |Mode  |Cnt  |Score   |  Error    |Units |
+|-----------------------------------------------|------|-----|--------|-----------|------|
+|PutWithCollisionsBenchmark.measureJavaMap      |avgt  | 100  |122.056 | ±1.222    |ms/op |
+|PutWithCollisionsBenchmark.measureLockFreeMap  |avgt  | 100  |2.282   | ± 0.011   |ms/op |
+
+#### 5.4.3. Get Benchmarking With Collisions
+8 threads attempted to fetch elements 1 millions times concurrently.    
+
+Following is the comparision of Average Response Time (avgt) using JMH benchmarking.
+
+|Benchmark                        |Mode  |Cnt  |Score   |  Error    |Units |
+|---------------------------------|------|-----|--------|-----------|------|
+|GetBenchmark.measureJDKMap1      |avgt  | 100 |0.474   | ±0.044    |ms/op |
+|GetBenchmark.measureLockFreeMap1 |avgt  | 100 |0.419   | ±0.001    |ms/op |
+
+#### 6. Singleton Reference
+Singleton Reference is a concurrent, non-blocking container of singleton which implements Singleton pattern using 
+Atomic classes.
+
+Assuming _HeavyObject_ is a user-defined class 
+```
+    SingleRef<HeavyObject> singleRef = new SingleRef<>(HeavyObject::new);
+    HeavyObject singletonObj = singleRef.get();
+```

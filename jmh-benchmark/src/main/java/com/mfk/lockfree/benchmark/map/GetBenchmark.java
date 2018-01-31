@@ -14,7 +14,7 @@ import static java.util.stream.Collectors.toList;
 
 @Fork(1)
 @Warmup(iterations = 10)
-@Measurement(iterations = 10)
+@Measurement(iterations = 100)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 public class GetBenchmark {
@@ -44,7 +44,7 @@ public class GetBenchmark {
         final ConcurrentMap<Key, Value> map;
 
         public JavaMapProvider() {
-            this.map = new ConcurrentHashMap<>();
+            this.map = new ConcurrentHashMap<>(1000);
             intr(1000).mapToObj(Key::new).forEach(k -> map.put(k, new Value(k.getKey())));
         }
     }
